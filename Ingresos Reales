@@ -1,0 +1,136 @@
+#title       : Script de Ingresos Reales
+#author      : Rodrigo Franco Fuentes
+#20/09/2016
+
+#######################Paquetes
+library(foreign) #para leer .dbf
+library(stringr) #para str_c
+library(dplyr) #para left_join
+library(reldist) #wtd.quantile
+library(ggplot2) #Gráficas
+library(readODS) #Para leer el archivo del deflactor
+library(tidyr) # Pra gather
+
+############################Trabajar 10 años de ENOE
+#file.rename("SDEMT115.dbf", "sdemt115.dbf") #Renombrar un archivo, para manejo programático delos nombres
+setwd("E:/Proyectos R/Gaby/data/Sociodemografico")#Cambiar al directorio donde se encuentran las bases de datos
+#En este directorio necesitamos las bases de datos en este formato sdemtqyy.dbf
+
+########################## Correr desde aquí
+df <- data.frame()  
+ENOETRANS<-data.frame()
+k=0 #Estableciendo un contador
+for(i in 2005:2016) 
+{
+      for (j in 1:4) 
+      {
+            k=k+1
+            ENOE <-str_c(str_c("sdemt",str_c(j,substr(i,3,4))),".dbf") #substr selecciona los dos ultimos digitos 
+            print(ENOE)
+            df <- read.dbf(ENOE)
+            df <- filter(df, R_DEF == "00") #00 Resultado definitivo de la entrevista, entrevista completa
+            df$EDA<-as.numeric(df$EDA) #subsets que se necesitan para utilizar la base...
+            df <- filter(df, C_RES == 1 | C_RES == 3)
+            df$Ing_Pob = as.numeric(df$INGOCUP * df$FAC)  #Creamos una variable para la masa salarial
+            dfh<- filter(df, SEX == 1) #Subset hombres
+            dfm<- filter(df, SEX == 2) #Subset mujeres
+            ENOETRANS[k,1]<-  str_c(i,j)
+            ENOETRANS[k,2] <- df %>% summarise(Pob_Total = sum(FAC))  #Población total
+            #quantile
+            df <- filter(df, EDA >= 14) # de sociodemográficos
+            df <- filter(df, EDA <=98)
+            for (l in 1:19){       #19 quantiles v2 a v19
+                  ENOETRANS[k, l + 2] <- wtd.quantile(df[df$INGOCUP > 0,]$INGOCUP, q = l * 0.05 , weight = df[df$INGOCUP > 0,]$FAC) 
+            } #acaba en linea 21
+            ENOETRANS[k,22] <- wtd.quantile(df[df$INGOCUP > 0,]$INGOCUP, q =0.99 , weight = df[df$INGOCUP > 0,]$FAC) # el 1 %, ojo ingresos por ocupacion
+            ENOETRANS[k,23] <- df %>% 
+                  summarise(Pob_mayor_14 = sum(FAC))  #Poblacion total (mayor de 14 menor de 98), después del filtro
+            ENOETRANS[k,24] <- df %>%
+                  filter(SEX %in% c(1)) %>%  #Hombres
+                  summarise(Hombres = sum(FAC))
+            ENOETRANS[k,25] <- df %>%
+                  filter(SEX %in% c(2)) %>%  #Mujeres
+                  summarise(Mujeres = sum(FAC))
+            ENOETRANS[k,26] <- df %>%
+                  summarise(Masa_salarial = sum((df$Ing_Pob))) 
+            ENOETRANS[k,27] <- df %>% 
+                  summarise(Masa_salarial_hombres = sum(dfh$Ing_Pob))
+            ENOETRANS[k,28] <- df %>% 
+                  summarise(Masa_salarial_mujeres = sum(dfm$Ing_Pob))
+            ENOETRANS[k,29]<- sum(filter(df, INGOCUP >0 & INGOCUP <= ENOETRANS[k,4])$Ing_Pob) #Masa salarial de la pob con el 10% o menos
+            ENOETRANS[k,30]<- sum(filter(df, INGOCUP >0 & INGOCUP <= ENOETRANS[k,12])$Ing_Pob) #Masa salarial de la pob con el 50% o menos
+            ENOETRANS[k,31]<- sum(filter(df, INGOCUP >0 & INGOCUP <= ENOETRANS[k,4])$FAC) #10% de la población con ingresos positivos
+            ENOETRANS[k,32]<- sum(filter(df, INGOCUP >0 & INGOCUP <= ENOETRANS[k,12])$FAC) #50% de la población con ingresos positivos
+            ENOETRANS[k,33]<- sum(filter(df, INGOCUP >0 & SEX == 1)$FAC) #Hombres con ingresos positivos
+            ENOETRANS[k,34]<- sum(filter(df, INGOCUP >0 & SEX == 2)$FAC) #Mujeres con ingresos positivos
+            ENOETRANS[k,35]<- sum(filter(df,INGOCUP >0)$FAC) #Población mayor de 14 años con ingresos positivos
+      }
+}
+
+#######Sección con los nombres de las variables 
+
+colnames(ENOETRANS)[29] <- "MaSal10p"
+colnames(ENOETRANS)[30] <- "MaSal50p"
+colnames(ENOETRANS)[31] <- "Pob10p"
+colnames(ENOETRANS)[32] <- "Pob50p"
+colnames(ENOETRANS)[33] <- "HomInPos"
+colnames(ENOETRANS)[34] <- "MujIngPos"
+colnames(ENOETRANS)[35] <- "Pob_Ing_Pos"
+colnames(ENOETRANS)[1] <- "Año_Trimestre"
+colnames(ENOETRANS)[3] <- "q05"
+colnames(ENOETRANS)[4] <- "q10"
+colnames(ENOETRANS)[5] <- "q15"
+colnames(ENOETRANS)[6] <- "q20"
+colnames(ENOETRANS)[7] <- "q25"
+colnames(ENOETRANS)[8] <- "q30"
+colnames(ENOETRANS)[9] <- "q35"
+colnames(ENOETRANS)[10] <- "q40"
+colnames(ENOETRANS)[11] <- "q45"
+colnames(ENOETRANS)[12] <- "q50"
+colnames(ENOETRANS)[13] <- "q55"
+colnames(ENOETRANS)[14] <- "q60"
+colnames(ENOETRANS)[15] <- "q65"
+colnames(ENOETRANS)[16] <- "q70"
+colnames(ENOETRANS)[17] <- "q75"
+colnames(ENOETRANS)[18] <- "q80"
+colnames(ENOETRANS)[19] <- "q85"
+colnames(ENOETRANS)[20] <- "q90"
+colnames(ENOETRANS)[21] <- "q95"
+colnames(ENOETRANS)[22] <- "q99"
+colnames(ENOETRANS)[1] <- "Año"
+####################Nuevas Variables
+ENOETRANS<-mutate(ENOETRANS, IngPromGen = Masa_salarial/Pob_Ing_Pos)
+ENOETRANS<-mutate(ENOETRANS, IngPromHom = Masa_salarial_hombres/HomInPos)
+ENOETRANS<-mutate(ENOETRANS, IngPromMuj = Masa_salarial_mujeres/MujIngPos)
+ENOETRANS<-mutate(ENOETRANS, IngProm10p = MaSal10p/Pob10p)
+ENOETRANS<-mutate(ENOETRANS, IngProm50p = MaSal50p/Pob50p)
+
+#####################Deflactor 
+Deflactor <- read.csv( "E:/Proyectos R/Gaby/data/Deflactor INPC.csv")
+Deflactor<- Deflactor[,2]
+Deflactorts <- ts(Deflactor, start = c(2005,1), frequency = 12)
+Trimestral <- aggregate(Deflactorts, nfrequency = 4)/3
+Trimestraldf<- as.data.frame(Trimestral)
+colnames(Trimestraldf) <- "Deflactor"
+head(Trimestraldf)
+ENOETRANS<- cbind(ENOETRANS,Trimestraldf)
+ENOETRANS<- mutate(ENOETRANS, IngPromGenR = (IngPromGen*100)/Deflactor)
+ENOETRANS<- mutate(ENOETRANS, IngPromHomR = (IngPromHom*100)/Deflactor)
+ENOETRANS<- mutate(ENOETRANS, IngPromMujR = (IngPromMuj*100)/Deflactor)
+ENOETRANS<- mutate(ENOETRANS, IngProm10pR = (IngProm10p*100)/Deflactor)
+
+#######################Guardar y leer los archivos
+write.csv(ENOETRANS, "E:/Proyectos R/Gaby/Ingreso1.csv") #para guardar el archivo
+ENOETRANS<- read.csv("E:/Proyectos R/Gaby/Ingreso1.csv") #para leer el archivo
+
+########################Gráficas de los resultados
+head(ENOETRANS)
+colnames(ENOETRANS)
+
+dbG1 <- ENOETRANS[c("Año_Trimestre", "IngPromGenR", "IngPromHomR", "IngPromMujR")]
+dbG1<-gather(dbG1, "Año_Trimestre")
+colnames(dbG1)[2] <- "Tipo"
+head(dbG1)
+###Gráfica con Tidy Data
+p1<- ggplot(data = dbG1, aes(Año_Trimestre, value))
+p1 +  geom_line() + theme_classic() 
