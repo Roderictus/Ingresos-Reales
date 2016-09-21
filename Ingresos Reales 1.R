@@ -1,1 +1,0 @@
-#Script de ingresos reales
