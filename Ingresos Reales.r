@@ -12,12 +12,35 @@ library(readODS) #Para leer el archivo del deflactor
 library(tidyr) # Para gather
 
 ############################Trabajar 10 años de ENOE
+setwd("C:/Proyectos/Ingresos-Reales/DATA/Sociodemográficos")
+
 #file.rename("SDEMT115.dbf", "sdemt115.dbf") #Renombrar un archivo, para manejo programático delos nombres
-setwd("E:/Proyectos R/Gaby/data/Sociodemografico")#Cambiar al directorio donde se encuentran las bases de datos
+#bajar todo a minúsculas
+#for (i in 1:length(dir())){
+#  file.rename(dir()[i], tolower(dir()[i]))
+#  print(temp[i])
+#}
+
+#file.rename("enoe_sdemt123.dbf", "sdemt123.dbf")
+#file.rename("enoen_sdemt120.dbf", "sdemt120.dbf")
+#file.rename("enoen_sdemt121.dbf", "sdemt121.dbf")
+#file.rename("enoen_sdemt122.dbf", "sdemt122.dbf")
+#file.rename("enoen_sdemt221.dbf", "sdemt221.dbf")
+#file.rename("enoen_sdemt222.dbf", "sdemt222.dbf")
+#file.rename("enoen_sdemt320.dbf", "sdemt320.dbf")
+#file.rename("enoen_sdemt321.dbf", "sdemt321.dbf")
+#file.rename("enoen_sdemt322.dbf", "sdemt322.dbf")
+#file.rename("enoen_sdemt420.dbf", "sdemt420.dbf")
+#file.rename("enoen_sdemt421.dbf", "sdemt421.dbf")
+#file.rename("enoen_sdemt422.dbf", "sdemt422.dbf")
+  
+  
+#setwd("E:/Proyectos R/Gaby/data/Sociodemografico")#Cambiar al directorio donde se encuentran las bases de datos
 #En este directorio necesitamos las bases de datos en este formato sdemtqyy.dbf
 list.files()
 
-ENOEP <- read.dbf("sdemt415.dbf")
+#ENOEP <- read.dbf("sdemt415.dbf")
+ENOEP <- read.dbf("sdemt207.dbf")
 ENOEP <- as.tbl(ENOEP)
 ENOEP <- filter(ENOEP, C_RES ==1 | C_RES ==3 )
 ENOEP <- filter(ENOEP, as.numeric(EDA) >= 14)

@@ -43,6 +43,23 @@ filename <- "enoe_2023_trim1_dbf.zip"
 download_files(base_url, filename, save_dir)
 
 ##############################      UNZIP     ##################################
+setwd("C:/Proyectos/Ingresos-Reales/DATA/DBF ZIPS")
+zip_files <- list.files(pattern = "*.zip")
 
+unzip_to_folder <- function(zip_file) {
+  # Extract the folder name without the .zip extension
+  folder_name <- tools::file_path_sans_ext(zip_file)
+  
+  # Create the folder if it doesn't exist
+  if (!dir.exists(folder_name)) {
+    dir.create(folder_name)
+  }
+  
+  # Unzip the file into the folder
+  unzip(zip_file, exdir = folder_name)
+}
 
+lapply(zip_files, unzip_to_folder)
 
+#####################################################################
+#   SEPARAR SOCIODEMOGRÁFICOS ##############
